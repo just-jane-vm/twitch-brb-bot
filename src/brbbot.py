@@ -1,7 +1,7 @@
 from twitchAPI.twitch import Twitch
 from twitchAPI.oauth import UserAuthenticator
 from twitchAPI.type import AuthScope, ChatEvent
-from twitchAPI.chat import Chat, EventData, ChatCommand
+from twitchAPI.chat import Chat, EventData, ChatCommand, ChatMessage
 from config import Config
 from game import Game
 import asyncio
@@ -29,11 +29,23 @@ class BRBBot():
 
         self.chat.register_event(ChatEvent.READY, self.on_ready)
 
-        self.chat.register_command(self.config.twitch.start, self.on_start)
-        self.chat.register_command(self.config.twitch.stop, self.on_stop)
-        self.chat.register_command(self.config.twitch.add_chatter, self.on_add)
-        self.chat.register_command(self.config.twitch.speed_up, self.on_speed_up)
-        self.chat.register_command(self.config.twitch.slow_down, self.on_slow_down)
+        if (self.config.twitch.commands.start):
+            self.chat.register_command(self.config.twitch.commands.start, self.on_start)
+
+        if (self.config.twitch.commands.stop):
+            self.chat.register_command(self.config.twitch.commands.stop, self.on_stop)
+
+        if (self.config.twitch.commands.add_user):
+            self.chat.register_command(self.config.twitch.commands.add_user, self.on_add)
+
+        if (self.config.twitch.commands.speed_up):
+            self.chat.register_command(self.config.twitch.commands.speed_up, self.on_speed_up)
+
+        if (self.config.twitch.commands.slow_down):
+            self.chat.register_command(self.config.twitch.commands.slow_down, self.on_slow_down)
+
+        if (self.config.twitch.add_user_on_msg):
+            self.chat.register_event(ChatEvent.MESSAGE, self.on_message)
 
         self.chat.start()
 
@@ -67,21 +79,26 @@ class BRBBot():
         self.event_ch = None
         print("Game killed")
 
+    async def on_message(self, msg: ChatMessage):
+        if (self.event_ch):
+            self.event_ch.send(f'cmd=add {msg.user.display_name},{msg.user.color}')
+
     async def stop(self):
         self.chat.stop()
         await self.twitch.close()
 
     async def on_ready(self, ready_event: EventData):
         print('BRBBot ready for work.')
-        await ready_event.chat.join_room(self.config.twitch.channel_name)
-        print(f'Joined channel: {self.config.twitch.channel_name} succesfully')
+        for channel in (self.config.twitch.channel_names):
+            await ready_event.chat.join_room(channel)
+            print(f'Joined [{channel}] succesfully.')
 
     async def on_add(self, cmd: ChatCommand):
         if (self.event_ch):
-            self.event_ch.send(f'cmd=add {cmd.user.name},{cmd.user.color}')
+            self.event_ch.send(f'cmd=add {cmd.user.display_name},{cmd.user.color}')
 
     async def on_stop(self, cmd: ChatCommand):
-        if cmd.user.name != self.config.twitch.channel_name:
+        if cmd.user.name != self.config.twitch.channel_names:
             return
 
         self._stop_game()
@@ -89,15 +106,13 @@ class BRBBot():
     async def on_speed_up(self, cmd: ChatCommand):
         if (self.event_ch):
             self.event_ch.send('cmd=speed_up')
-        return
 
     async def on_slow_down(self, cmd: ChatCommand):
         if (self.event_ch):
             self.event_ch.send('cmd=slow_down')
-        return
 
     async def on_start(self, cmd: ChatCommand):
-        if cmd.user.name != self.config.twitch.channel_name:
+        if cmd.user.name not in self.config.twitch.channel_names:
             return
 
         if not self.game_process: 

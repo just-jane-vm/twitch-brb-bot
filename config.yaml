@@ -1,0 +1,20 @@
+resolution:
+  height: 600
+  width: 800
+fullscreen: False
+fps: 30
+assets_dir: ../assets/
+twitch:
+  channel_names:
+    - just__jane
+    - Abtar
+  add_user_on_msg: True
+  commands:
+    start: brbbot-start # The channel owner can use this
+    stop: brbbot-stop # The channel owner can use this
+    add_user: put_me_in_coach
+    speed_up: vroom
+    slow_down: screech
+  app_id:
+  app_secret: 
+

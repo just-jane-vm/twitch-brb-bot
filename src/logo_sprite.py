@@ -3,7 +3,7 @@ import random
 import os
 
 class DVD(pygame.sprite.Sprite):
-    def __init__(self, window, config, sounds, *groups):
+    def __init__(self, window, config, sounds, cheer, *groups):
         self.group = groups
         super().__init__(*groups)
         self.sounds = sounds
@@ -14,6 +14,9 @@ class DVD(pygame.sprite.Sprite):
         self.sprite = pygame.transform.scale(self.sprite, (rect.width, rect.height))
         self.image = self.sprite
         self.rect = self.sprite.get_rect(center=self.window.get_rect().center)
+        self.cheer = cheer
+        print(self.cheer is not None)
+
 
         pixel_array = pygame.PixelArray(self.image)
         self.current_color = (255, 255, 255)
@@ -35,15 +38,22 @@ class DVD(pygame.sprite.Sprite):
         self.current_color = color
 
     def change_direction(self, window):
+        corner_hit = -1
         if self.rect.left < 0 and self.dx < 0: 
+            corner_hit += 1
             self.dx = -self.dx
         elif self.rect.right > window.width and self.dx > 0: 
+            corner_hit += 1
             self.dx = -self.dx
             
         if self.rect.top < 0  and self.dy > 0:  
+            corner_hit += 1
             self.dy = -self.dy
         elif self.rect.bottom > window.height and self.dy < 0:
+            corner_hit += 1
             self.dy = -self.dy
+
+        return corner_hit == 1
 
     def speed_up(self):
         self.velocity = min(20, self.velocity + 4)
@@ -54,11 +64,13 @@ class DVD(pygame.sprite.Sprite):
     def update(self):
         window_rec = self.window.get_rect()
         if not window_rec.contains(self.rect):
-            self.change_direction(window_rec)
             self.change_color()
-            sound = self.sounds.pop(0)
-            sound.play()
-            self.sounds.append(sound)
+            if (self.change_direction(window_rec) and self.cheer):
+                self.cheer.play()
+            else:
+                sound = self.sounds.pop(0)
+                sound.play()
+                self.sounds.append(sound)
 
         self.rect.x += self.dx * self.velocity
         self.rect.y -= self.dy * self.velocity

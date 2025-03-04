@@ -15,26 +15,27 @@ class Config():
         self.fps = config['fps']
         self.assets_dir = config['assets_dir']
 
-        twitch_fields = ['channel_name',
-                          'start',
-                          'stop',
-                          'add_chatter',
-                          'speed_up',
-                          'slow_down',
-                          'app_id',
-                          'app_secret']
-                        
-        TwitchConfig = namedtuple('TwitchConfig', twitch_fields)
-        t = config['twitch']
-        self.twitch = TwitchConfig(
-            t['channel_name'],
-            t['start'],
-            t['stop'],
-            t['add_chatter'],
-            t['speed_up'],
-            t['slow_down'],
-            t['app_id'],
-            t['app_secret'])
+        self.twitch = TwitchConfig(config['twitch'])
+
+class TwitchConfig():
+    def __init__(self, config):
+        self.channel_names = config['channel_names']
+        self.app_id = config['app_id']
+        self.app_secret = config['app_secret']
+        self.add_user_on_msg = config['add_user_on_msg']
+
+        TwitchCommands = namedtuple(
+            'TwitchCommands', 
+            ('start', 'stop', 'add_user', 'speed_up', 'slow_down'))
+
+        cmd = config['commands']
+        self.commands = TwitchCommands(
+            cmd['start'],
+            cmd['stop'],
+            cmd['add_user'],
+            cmd['speed_up'],
+            cmd['slow_down'])
+
                 
 
 

@@ -44,10 +44,13 @@ class Chatter(pygame.sprite.Sprite):
 
     def convert_color(self, color: str):
         if not color:
-            return (255, 255, 255)
+            return self.get_random_color()
 
         color = color.lstrip('#')
         if not color or len(color) != 6:
-            return (255, 255, 255)
+            return self.get_random_color()
 
         return tuple(int(color[i:i+2], 16) for i in (0, 2, 4))
+
+    def get_random_color(self):
+        return (random.randint(60, 255), random.randint(60, 255), random.randint(60, 255))

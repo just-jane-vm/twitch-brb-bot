@@ -25,18 +25,19 @@ class Game():
     
         self.splat = []
         self.bonk = []
+        self.cheer = None
         for file in os.listdir(assets_dir):
             filename = os.fsdecode(file)
-            if not filename.endswith('.wav'):
-                continue
 
             if filename.startswith("splat"):
                 self.splat.append(pygame.mixer.Sound(os.path.join(config.assets_dir, filename)))
             elif filename.startswith("bonk"):
                 self.bonk.append(pygame.mixer.Sound(os.path.join(config.assets_dir, filename)))
+            elif filename.startswith("cheer"):
+                self.cheer = pygame.mixer.Sound(os.path.join(config.assets_dir, filename))
                 continue
 
-        self.player = DVD(self.screen, config, self.bonk, (self.sprites))
+        self.player = DVD(self.screen, config, self.bonk, self.cheer, (self.sprites))
 
         self.fps = config.fps
         self.clock = pygame.time.Clock()
