@@ -50,12 +50,19 @@ class BRBBot():
 
         try:
             self.chat.start()
-            input('press ENTER to stop\n')
-        finally:
-            # now we can close the chat bot and the twitch api client
-            if self.game_process:
-                self.kill_ch.send("die")
+            user_input = None
+            while user_input != 'exit':
+                user_input = input('Enter help for commands: ').lower()
+                if user_input.startswith('frame'):
+                    if self.event_ch:
+                        self.event_ch.send(f'cmd={user_input}')
+                    continue
 
+                if user_input == 'help':
+                    print('TODO: add help message...')
+
+        finally:
+            self._stop_game()
             self.chat.stop()
             await self.twitch.close()
 
@@ -79,23 +86,31 @@ class BRBBot():
         self.chat.unregister_event(ChatEvent.MESSAGE)
 
     def _start_game(self, ch1, ch2, config):
-        self.logger.info("Game process start")
+        self.logger.debug("Game process start")
         game = Game(config, ch1, ch2)
         game.run()
-        self.logger.info("Game process exit")
+        self.logger.debug("Game process exit")
 
     def _stop_game(self):
         if not self.game_process:
             return
 
+        if not self.game_process.is_alive():
+            self.logger.error('Game process was closed unexpectedly.')
+            self.game_process = None
+            self.kill_ch = None
+            self.event_ch = None
+            return
+
         self.kill_ch.send("die")
         self.game_process.join()
-        self.game_process = None
-        self.kill_ch.close()
-        self.kill_ch = None
 
+        self.kill_ch.close()
         self.event_ch.close()
+        self.game_process = None
+        self.kill_ch = None
         self.event_ch = None
+
         self.logger.debug("Game killed")
 
     async def stop(self):
