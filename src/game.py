@@ -54,8 +54,6 @@ class Game():
     def _step(self):
         while self.event_ch.poll():
             command = self.event_ch.recv()
-            self.logger.trace(f'Received command: {command}')
-
             cmd, args = self._parse_cmd(command)
             if not cmd:
                 return

@@ -8,10 +8,11 @@ logging.basicConfig(level=logging.INFO,
                     filemode='w')
 
 __console = logging.StreamHandler()
-__console.setLevel(logging.DEBUG)
+__console.setLevel(logging.INFO)
 
 __console.setFormatter(logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s'))
 logging.getLogger().addHandler(__console)
+logging.getLogger("twitchAPI.chat").setLevel(logging.ERROR)
 
 def get_logger(scope: str):
     return logging.getLogger(scope)

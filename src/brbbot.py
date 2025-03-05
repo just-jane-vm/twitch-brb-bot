@@ -121,7 +121,7 @@ class BRBBot():
         self.logger.debug('BRBBot ready for work.')
         for channel in (self.config.twitch.channel_names):
             await ready_event.chat.join_room(channel)
-            self.logger.debug(f'Joined [{channel}] succesfully.')
+            self.logger.info(f'Joined [{channel}] succesfully.')
 
     @event_ch_guard
     async def on_message(self, msg: ChatMessage):
