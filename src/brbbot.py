@@ -6,6 +6,7 @@ from config import Config
 from game import Game
 import asyncio
 import multiprocessing
+from logger import get_logger
 
 SCOPES = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
@@ -18,6 +19,7 @@ class BRBBot():
         self.kill_ch = None
         self.chat = None
         self.twitch = None
+        self.logger = get_logger('BRBBot')
 
     async def start(self):
         self.twitch = await Twitch(self.config.twitch.app_id, self.config.twitch.app_secret)
@@ -60,10 +62,10 @@ class BRBBot():
             await self.twitch.close()
 
     def _start_game(self, ch1, ch2, config):
-        print("Game process start")
+        self.logger.debug("Game process start")
         game = Game(config, ch1, ch2)
         game.run()
-        print("Game process exit")
+        self.logger.debug("Game process exit")
 
     def _stop_game(self):
         if not self.game_process:
@@ -77,7 +79,7 @@ class BRBBot():
 
         self.event_ch.close()
         self.event_ch = None
-        print("Game killed")
+        self.logger.debug("Game killed")
 
     async def on_message(self, msg: ChatMessage):
         if (self.event_ch):
@@ -88,10 +90,10 @@ class BRBBot():
         await self.twitch.close()
 
     async def on_ready(self, ready_event: EventData):
-        print('BRBBot ready for work.')
+        self.logger.debug('BRBBot ready for work.')
         for channel in (self.config.twitch.channel_names):
             await ready_event.chat.join_room(channel)
-            print(f'Joined [{channel}] succesfully.')
+            self.logger.debug(f'Joined [{channel}] succesfully.')
 
     async def on_add(self, cmd: ChatCommand):
         if (self.event_ch):
@@ -119,9 +121,9 @@ class BRBBot():
             self.kill_ch, ch1 = multiprocessing.Pipe()
             self.event_ch, ch2 = multiprocessing.Pipe()
             self.game_process = multiprocessing.Process(target=self._start_game, args=(ch1, ch2,self.config))
-            print("Starting game...")
+            self.logger.debug("Starting game...")
             self.game_process.start()
-            print("Game started...")
+            self.logger.debug("Game started...")
 
 async def main():
     bot = BRBBot()
