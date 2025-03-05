@@ -3,12 +3,15 @@ from logo_sprite import DVD
 from chatter_sprite import Chatter
 import re
 import os
+from logger import get_logger
 
 class Game():
     def __init__(self, config, kill_signal, event_ch):
+        self.logger = get_logger('game_instance')
         self.event_ch = event_ch
         self.kill_ch = kill_signal
         self.cmd_pattern = re.compile(r"^cmd=(?P<cmd>\S*)\s?(?P<args>.*)")
+        self.config = config
 
         pygame.init()
         path = os.path.join(config.assets_dir, 'Consolas.ttf')
@@ -65,6 +68,20 @@ class Game():
 
                 name, color = args[0], args[1]
                 self._make_chatter(name, color)
+            elif cmd == 'frame':
+                if not args:
+                    return
+
+                if args[0] == 'off':
+                    self.screen = pygame.display.set_mode(
+                        (self.config.resolution.w, self.config.resolution.h),
+                        pygame.NOFRAME)
+                elif args[0] == 'on':
+                    self.screen = pygame.display.set_mode(
+                        (self.config.resolution.w, self.config.resolution.h))
+                else:
+                    self.logger.error(f'Invalid argument to frame command: {args}'
+                                      + 'expected [on] or [off].')
 
         for chatter in self.chatters:
             if self.player.rect.colliderect(chatter.rect):
@@ -79,7 +96,7 @@ class Game():
     def _parse_cmd(self, command):
         match = self.cmd_pattern.match(command)
         if not match or 'cmd' not in match.groupdict():
-            print('received malformed command: {cmd}')
+            self.logger.error(f'received malformed command: {match}')
             return None, None
 
         cmd = match.group('cmd')
@@ -90,7 +107,7 @@ class Game():
         return cmd, args
 
     def run(self):
-        print("Game loop started")
+        self.logger.debug("Game loop started")
         while self.running is True:
             self.clock.tick(self.fps)
 
