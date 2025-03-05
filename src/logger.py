@@ -1,6 +1,5 @@
 import logging
 
-# set up logging to file - see previous section for more details
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M:%s',
@@ -9,9 +8,10 @@ logging.basicConfig(level=logging.INFO,
 
 __console = logging.StreamHandler()
 __console.setLevel(logging.INFO)
-
 __console.setFormatter(logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s'))
 logging.getLogger().addHandler(__console)
+
+# the twitchAPI logs are kind of noisy to be on the screen all the time.
 logging.getLogger("twitchAPI.chat").setLevel(logging.ERROR)
 
 def get_logger(scope: str):
