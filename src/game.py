@@ -18,6 +18,9 @@ class Game():
         self.sprites = pygame.sprite.Group()
         self.chatters = pygame.sprite.Group()
 
+        icon = pygame.image.load(os.path.join(self.config.assets_dir, 'logo.png'))
+        pygame.display.set_icon(icon)
+
         self.screen = pygame.display.set_mode(
             (self.config.resolution.w, self.config.resolution.h),
             pygame.NOFRAME)
@@ -40,6 +43,7 @@ class Game():
                 continue
 
         self.player = DVD(self.screen, self.config, self.bonk, self.cheer, (self.sprites))
+        pygame.display.set_icon(self.player.sprite)
 
         self.fps = self.config.fps
         self.clock = pygame.time.Clock()

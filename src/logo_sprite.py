@@ -19,7 +19,7 @@ class DVD(pygame.sprite.Sprite):
 
 
         pixel_array = pygame.PixelArray(self.image)
-        self.current_color = (255, 255, 255)
+        self.current_color = (215, 131, 127)
         for x in range(self.rect.width):
             for y in range(self.rect.height):
                 if (pixel_array[x, y] != 0):
