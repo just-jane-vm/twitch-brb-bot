@@ -1,30 +1,29 @@
 import pygame
 from logo_sprite import DVD
 from chatter_sprite import Chatter
+from config import Config
 import re
 import os
-from logger import get_logger
+from multiprocessing.connection import Client
 
 class Game():
-    def __init__(self, config, kill_signal, event_ch):
-        self.logger = get_logger('game_instance')
-        self.event_ch = event_ch
-        self.kill_ch = kill_signal
+    def __init__(self, address):
         self.cmd_pattern = re.compile(r"^cmd=(?P<cmd>\S*)\s?(?P<args>.*)")
-        self.config = config
+        self.config = Config()
+        self.conn = Client(address)
 
         pygame.init()
-        path = os.path.join(config.assets_dir, 'Consolas.ttf')
+        path = os.path.join(self.config.assets_dir, 'Consolas.ttf')
         self.font = pygame.font.Font(path, 20)
         self.sprites = pygame.sprite.Group()
         self.chatters = pygame.sprite.Group()
 
         self.screen = pygame.display.set_mode(
-            (config.resolution.w, config.resolution.h),
+            (self.config.resolution.w, self.config.resolution.h),
             pygame.NOFRAME)
     
         pygame.display.set_caption("just__jane")
-        assets_dir = os.fsencode(config.assets_dir)
+        assets_dir = os.fsencode(self.config.assets_dir)
     
         self.splat = []
         self.bonk = []
@@ -33,16 +32,16 @@ class Game():
             filename = os.fsdecode(file)
 
             if filename.startswith("splat"):
-                self.splat.append(pygame.mixer.Sound(os.path.join(config.assets_dir, filename)))
+                self.splat.append(pygame.mixer.Sound(os.path.join(self.config.assets_dir, filename)))
             elif filename.startswith("bonk"):
-                self.bonk.append(pygame.mixer.Sound(os.path.join(config.assets_dir, filename)))
+                self.bonk.append(pygame.mixer.Sound(os.path.join(self.config.assets_dir, filename)))
             elif filename.startswith("cheer"):
-                self.cheer = pygame.mixer.Sound(os.path.join(config.assets_dir, filename))
+                self.cheer = pygame.mixer.Sound(os.path.join(self.config.assets_dir, filename))
                 continue
 
-        self.player = DVD(self.screen, config, self.bonk, self.cheer, (self.sprites))
+        self.player = DVD(self.screen, self.config, self.bonk, self.cheer, (self.sprites))
 
-        self.fps = config.fps
+        self.fps = self.config.fps
         self.clock = pygame.time.Clock()
         self.running = True
 
@@ -52,10 +51,15 @@ class Game():
         Chatter(self.screen, name, color, sound, self.font, (self.sprites, self.chatters))
 
     def _step(self):
-        while self.event_ch.poll():
-            command = self.event_ch.recv()
+        while self.conn.poll():
+            command = self.conn.recv()
             cmd, args = self._parse_cmd(command)
+
             if not cmd:
+                return
+
+            if cmd == 'die':
+                self.running = False
                 return
 
             if cmd == 'speed_up':
@@ -79,9 +83,6 @@ class Game():
                 elif args[0] == 'on':
                     self.screen = pygame.display.set_mode(
                         (self.config.resolution.w, self.config.resolution.h))
-                else:
-                    self.logger.error(f'Invalid argument to frame command: {args}'
-                                      + 'expected [on] or [off].')
 
         for chatter in self.chatters:
             if self.player.rect.colliderect(chatter.rect):
@@ -95,19 +96,17 @@ class Game():
 
     def _parse_cmd(self, command):
         match = self.cmd_pattern.match(command)
-        if not match or 'cmd' not in match.groupdict():
-            self.logger.error(f'received malformed command: {match}')
+        if not match:
             return None, None
 
         cmd = match.group('cmd')
         if 'args' not in match.groupdict():
             return cmd, None
 
-        args = match.group('args').split(',')
+        args = match.group('args').split(' ')
         return cmd, args
 
     def run(self):
-        self.logger.debug("Game loop started")
         while self.running is True:
             self.clock.tick(self.fps)
 
@@ -115,12 +114,7 @@ class Game():
                 if event.type == pygame.QUIT:
                     self.running = False
 
-            if self.kill_ch.poll():
-                self.kill_ch.recv()
-                self.kill_ch.close()
-                self.kill_ch = None
-                self.running = False
-
             self._step()
 
         pygame.quit()
+        self.conn.close()

@@ -11,11 +11,16 @@ class Config():
                 exit()
 
         height, width = config['resolution']['height'], config['resolution']['width']
-        self.resolution = namedtuple('Resolution', ('h', 'w'))(height, width)
+        self.resolution = Resolution(height, width)
         self.fps = config['fps']
         self.assets_dir = config['assets_dir']
 
         self.twitch = TwitchConfig(config['twitch'])
+
+class Resolution():
+    def __init__(self, h, w):
+        self.h = h
+        self.w = w
 
 class TwitchConfig():
     def __init__(self, config):
@@ -23,19 +28,14 @@ class TwitchConfig():
         self.app_id = config['app_id']
         self.app_secret = config['app_secret']
         self.add_user_on_msg = config['add_user_on_msg']
-
-        TwitchCommands = namedtuple(
-            'TwitchCommands', 
-            ('start', 'stop', 'add_user', 'speed_up', 'slow_down'))
-
-        cmd = config['commands']
-        self.commands = TwitchCommands(
-            cmd['start'],
-            cmd['stop'],
-            cmd['add_user'],
-            cmd['speed_up'],
-            cmd['slow_down'])
-
-                
+        self.commands = TwitchCommands(config['commands'])
+    
+class TwitchCommands():
+    def __init__(self, commands):
+        self.start = commands['start']
+        self.stop = commands['stop']
+        self.add_user = commands['add_user']
+        self.speed_up = commands['speed_up']
+        self.slow_down = commands['slow_down']
 
 

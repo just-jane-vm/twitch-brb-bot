@@ -6,10 +6,15 @@ from config import Config
 from game import Game
 import asyncio
 import multiprocessing
+import multiprocessing.connection
 from logger import get_logger
 from functools import wraps
 
 SCOPES = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
+
+def _start_game(event_queue):
+    game = Game(event_queue)
+    game.run()
 
 class BRBBot():
     def event_ch_guard(func):
@@ -18,7 +23,7 @@ class BRBBot():
             if self.event_ch:
                 return await func(self, *args, **kwargs)
             else:
-                self.logger.error("Event channel guard prevented access to null event channel.")
+                self.logger.warning("Event channel guard prevented access to null event channel.")
                 return None
         return wrapper
 
@@ -27,7 +32,7 @@ class BRBBot():
         self.game = None
         self.game_process = None
         self.event_ch = None
-        self.kill_ch = None
+        self.listener = None
         self.chat = None
         self.twitch = None
         self.logger = get_logger('BRBBot')
@@ -81,36 +86,29 @@ class BRBBot():
 
     def unregister_commands(self):
         self.chat.unregister_command(self.config.twitch.commands.add_user)
-        self.chat.unregister_command(self.config.twitch.commands.speed_upp)
+        self.chat.unregister_command(self.config.twitch.commands.speed_up)
         self.chat.unregister_command(self.config.twitch.commands.slow_down)
-        self.chat.unregister_event(ChatEvent.MESSAGE)
-
-    def _start_game(self, ch1, ch2, config):
-        self.logger.debug("Game process start")
-        game = Game(config, ch1, ch2)
-        game.run()
-        self.logger.debug("Game process exit")
+        self.chat.unregister_event(ChatEvent.MESSAGE, self.on_message)
 
     def _stop_game(self):
         if not self.game_process:
             return
 
-        if not self.game_process.is_alive():
-            self.logger.error('Game process was closed unexpectedly.')
-            self.game_process = None
-            self.kill_ch = None
+        try:
+            self.logger.debug('Sending kill command')
+            self.event_ch.send("cmd=die")
+            self.event_ch.close()
+            self.listener.close()
+        except:
+            self.logger.error("Error closing connection")
+        finally:
             self.event_ch = None
-            return
+            self.listener = None
 
-        self.kill_ch.send("die")
-        self.game_process.join()
+        if self.game_process.is_alive():
+            self.game_process.join()
 
-        self.kill_ch.close()
-        self.event_ch.close()
         self.game_process = None
-        self.kill_ch = None
-        self.event_ch = None
-
         self.logger.debug("Game killed")
 
     async def stop(self):
@@ -125,11 +123,11 @@ class BRBBot():
 
     @event_ch_guard
     async def on_message(self, msg: ChatMessage):
-        self.event_ch.send(f'cmd=add {msg.user.display_name},{msg.user.color}')
+        self.event_ch.send(f'cmd=add {msg.user.display_name} {msg.user.color}')
 
     @event_ch_guard
     async def on_add(self, cmd: ChatCommand):
-        self.event_ch.send(f'cmd=add {cmd.user.display_name},{cmd.user.color}')
+        self.event_ch.send(f'cmd=add {cmd.user.display_name} {cmd.user.color}')
 
     @event_ch_guard
     async def on_speed_up(self, cmd: ChatCommand):
@@ -140,7 +138,7 @@ class BRBBot():
         self.event_ch.send('cmd=slow_down')
 
     async def on_stop(self, cmd: ChatCommand):
-        if cmd.user.name != self.config.twitch.channel_names:
+        if cmd.user.name not in self.config.twitch.channel_names:
             return
 
         self._stop_game()
@@ -151,11 +149,12 @@ class BRBBot():
             return
 
         if not self.game_process: 
-            self.kill_ch, ch1 = multiprocessing.Pipe()
-            self.event_ch, ch2 = multiprocessing.Pipe()
-            self.game_process = multiprocessing.Process(target=self._start_game, args=(ch1, ch2,self.config))
+            addr = ('localhost', 6063)
+            self.listener = multiprocessing.connection.Listener(addr)
+            self.game_process = multiprocessing.Process(target=_start_game, args=(addr,))
             self.logger.debug("Starting game...")
             self.game_process.start()
+            self.event_ch = self.listener.accept()
             self.logger.debug("Game started...")
             self.register_commands()
  
@@ -165,4 +164,3 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
-
