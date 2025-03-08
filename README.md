@@ -1,5 +1,7 @@
 # BRBBot
 
+![demo](docs/demo.gif)
+
 ## Installtion & Setup
 BRBBot was built and tested using python 3.12.2.
 
@@ -38,10 +40,6 @@ python brbbot.py
 ```
 
 The script must be launched from the src directory.
-
-
-
-
 
 
 
