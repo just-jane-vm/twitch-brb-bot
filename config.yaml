@@ -3,18 +3,23 @@ resolution:
   width: 800
 fullscreen: False
 fps: 30
-assets_dir: ../assets/
+assets: 
+  logo_path: ../assets/logo.png # Path to the png to use for logo
+  bonks: ../assets/bonk # Directory containing audio clips for logo collision sfx
+  splats: ../assets/splat # Directory containing audio clips for logo killing chatter name
+  cheer: ../assets/cheer.ogg # Path to audio clip to play when striking corner
+  font: ../assets/Consolas.ttf # Path to font to use for chatter names
 twitch:
   channel_names:
-    - just__jane
-    - Abtar
-  add_user_on_msg: True
+    - just__jane # List of channels to attach to
+    - channel_2
+    - channel_3
+  add_user_on_msg: True # Adds user to game whenever they chat
   commands:
-    start: brbbot-start # The channel owner can use this
-    stop: brbbot-stop # The channel owner can use this
-    add_user: put_me_in_coach
-    speed_up: vroom
-    slow_down: screech
+    start: brb # Only channel(s) owner can invoke this
+    stop: back # Only channel(s) owner can invoke this
+    add_user: add_me # Adds user to the game
+    speed_up: vroom # Speeds up the logo
+    slow_down: screech # Slows down the logo
   app_id:
-  app_secret: 
-
+  app_secret:
