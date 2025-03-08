@@ -2,7 +2,7 @@ from twitchAPI.twitch import Twitch
 from twitchAPI.oauth import UserAuthenticator
 from twitchAPI.type import AuthScope, ChatEvent
 from twitchAPI.chat import Chat, EventData, ChatCommand, ChatMessage
-from config import Config
+from config import get_config, Config
 from game import Game
 import asyncio
 import multiprocessing
@@ -12,8 +12,8 @@ from functools import wraps
 
 SCOPES = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
-def _start_game(event_queue):
-    game = Game(event_queue)
+def _start_game(event_queue, config: Config):
+    game = Game(event_queue, config)
     game.run()
 
 class BRBBot():
@@ -28,7 +28,11 @@ class BRBBot():
         return wrapper
 
     def __init__(self):
-        self.config = Config()
+        is_valid, self.config = get_config()
+        if not is_valid:
+            print('Configuration file contains errors, exiting')
+            exit()
+
         self.game = None
         self.game_process = None
         self.event_ch = None
@@ -145,13 +149,13 @@ class BRBBot():
         self.unregister_commands()
 
     async def on_start(self, cmd: ChatCommand):
-        if cmd.user.name not in self.config.twitch.channel_names:
+        if cmd.user.name.lower() not in self.config.twitch.channel_names:
             return
 
         if not self.game_process: 
             addr = ('localhost', 6063)
             self.listener = multiprocessing.connection.Listener(addr)
-            self.game_process = multiprocessing.Process(target=_start_game, args=(addr,))
+            self.game_process = multiprocessing.Process(target=_start_game, args=(addr, self.config))
             self.logger.debug("Starting game...")
             self.game_process.start()
             self.event_ch = self.listener.accept()

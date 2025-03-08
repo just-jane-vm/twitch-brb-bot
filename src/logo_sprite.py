@@ -1,6 +1,5 @@
 import pygame
 import random
-import os
 
 class DVD(pygame.sprite.Sprite):
     def __init__(self, window, config, sounds, cheer, *groups):
@@ -8,8 +7,7 @@ class DVD(pygame.sprite.Sprite):
         super().__init__(*groups)
         self.sounds = sounds
         self.window = window
-        path = os.path.join(config.assets_dir, 'logo.png')
-        self.sprite = pygame.image.load(path).convert_alpha()
+        self.sprite = pygame.image.load(config.assets.logo).convert_alpha()
         rect = self.sprite.get_rect().fit(pygame.Rect(0, 0, 200, 200))
         self.sprite = pygame.transform.scale(self.sprite, (rect.width, rect.height))
         self.image = self.sprite

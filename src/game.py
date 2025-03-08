@@ -1,24 +1,23 @@
 import pygame
 from logo_sprite import DVD
 from chatter_sprite import Chatter
-from config import Config
 import re
 import os
 from multiprocessing.connection import Client
 
 class Game():
-    def __init__(self, address):
+    def __init__(self, address, config):
+        self.config = config
+
         self.cmd_pattern = re.compile(r"^cmd=(?P<cmd>\S*)\s?(?P<args>.*)")
-        self.config = Config()
         self.conn = Client(address)
 
         pygame.init()
-        path = os.path.join(self.config.assets_dir, 'Consolas.ttf')
-        self.font = pygame.font.Font(path, 20)
+        self.font = pygame.font.Font(self.config.assets.font, 20)
         self.sprites = pygame.sprite.Group()
         self.chatters = pygame.sprite.Group()
 
-        icon = pygame.image.load(os.path.join(self.config.assets_dir, 'logo.png'))
+        icon = pygame.image.load(self.config.assets.logo)
         pygame.display.set_icon(icon)
 
         self.screen = pygame.display.set_mode(
@@ -26,21 +25,18 @@ class Game():
             pygame.NOFRAME)
     
         pygame.display.set_caption("just__jane")
-        assets_dir = os.fsencode(self.config.assets_dir)
     
-        self.splat = []
         self.bonk = []
-        self.cheer = None
-        for file in os.listdir(assets_dir):
-            filename = os.fsdecode(file)
+        dir = self.config.assets.bonks
+        for file in os.listdir(dir):
+            self.bonk.append(pygame.mixer.Sound(os.path.join(dir, file)))
 
-            if filename.startswith("splat"):
-                self.splat.append(pygame.mixer.Sound(os.path.join(self.config.assets_dir, filename)))
-            elif filename.startswith("bonk"):
-                self.bonk.append(pygame.mixer.Sound(os.path.join(self.config.assets_dir, filename)))
-            elif filename.startswith("cheer"):
-                self.cheer = pygame.mixer.Sound(os.path.join(self.config.assets_dir, filename))
-                continue
+        self.splat = []
+        dir = self.config.assets.splats
+        for file in os.listdir(dir):
+            self.splat.append(pygame.mixer.Sound(os.path.join(dir, file)))
+
+        self.cheer = pygame.mixer.Sound(self.config.assets.cheer)
 
         self.player = DVD(self.screen, self.config, self.bonk, self.cheer, (self.sprites))
         pygame.display.set_icon(self.player.sprite)
