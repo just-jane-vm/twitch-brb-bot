@@ -34,7 +34,7 @@ pip install -r requirements.txt
 From the /src directory execute:
 
 ```
-pything brbbot.py
+python brbbot.py
 ```
 
 The script must be launched from the src directory.
